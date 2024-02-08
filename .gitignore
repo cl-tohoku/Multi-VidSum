@@ -1,0 +1,25 @@
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# dotenv
+.env
+
+# virtualenv
+.venv
+venv/
+ENV/
+
+
+# priveate dirctory
+laion2B_en
+
+
+# wandb api key
+.wandb_api_key.txt
+
+note.org
+
+credentials.json

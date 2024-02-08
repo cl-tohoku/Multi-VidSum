@@ -1,0 +1,99 @@
+* A Challenging Multimodal Video Summary: Simultaneously Extracting and Generating Keyframe-Caption Pairs from Video
+This repository contains the code for the paper [[https://aclanthology.org/2023.emnlp-main.457/][A Challenging Multimodal Video Summary: Simultaneously Extracting and Generating Keyframe-Caption Pairs from Video]].
+
+** Basic Usage and samples
+This repository assumes that you run the code with Docker.
+
+*** Dockeer image preparation
+1. Setup wandb
+Please make [[https://wandb.ai/site][wandb]] account and make .wandb_api_key.txt file.
+#+BEGIN_SRC sh
+cd docker_setting
+echo $YOUR_WAND_API_KEY > .wandb_api_key.txt
+#+END_SRC
+
+*** Configure work directory
+Please edit `.project_config.sh` to specify your work directory.
+#+BEGIN_SRC sh
+emacs .project_config.sh
+WORK_DIR=/path/to/your/work/dir
+#+END_SRC
+
+*** Build docker image
+#+BEGIN_SRC sh
+cd docker_setting
+zsh build.sh
+#+END_SRC
+
+*** Enter docker container
+#+BEGIN_SRC sh
+cd ./experiments/coco_pretrain_flan_base
+zsh env_setup.sh
+zsh ./tools/interactive.sh
+#+END_SRC
+
+*** Download dataset and pre-trained model
+#+BEGIN_SRC sh
+cd /work
+huggingface-cli download tohoku-nlp/multi-vidsum --local-dir . --local-dir-use-symlinks False  --repo-type dataset
+tar -xzvf download.tar.gz --no-same-owner
+#+END_SRC
+
+
+** Coco pretrain
+#+BEGIN_SRC sh
+cd experiments/coco_pretrain_flan_base
+zsh env_setup.sh
+
+zsh ./scripts/prepro.sh ./configs/prepro_config_train.jsonnet
+zsh ./scripts/prepro.sh ./configs/prepro_config_valid.jsonnet
+zsh ./scripts/prepro.sh ./configs/prepro_config_test.jsonnet
+# Train with 4 GPUs
+zsh ./scripts/train.sh ./configs/train_config.jsonnet 0 1 2 3
+#+END_SRC
+
+** ActivityNet finetune
+#+BEGIN_SRC sh
+cd experiments/anet_fine_tuning_flan_base_wide
+zsh env_setup.sh
+
+zsh ./scripts/prepro.sh ./configs/prepro_config_train.jsonnet
+zsh ./scripts/prepro.sh ./configs/prepro_config_valid.jsonnet
+zsh ./scripts/prepro.sh ./configs/prepro_config_test.jsonnet
+# Train with 4 GPUs
+zsh ./scripts/train.sh ./configs/train_config.jsonnet 0 1 2 3
+#+END_SRC
+
+** Inference
+*** Specify model_name_or_path
+When you just want to use our pretrained model, you need to edit `./configs/train_config.jsonnet`. Please change `model_name_or_path` to `model_name_or_path: "%s/pretrained_models/Video2TextRerankerT5PL" % DOWNLOAD_DIR,` as commented out in the file.
+When you want to use your trained model following the above instructions, you don't need to edit `./configs/train_config.jsonnet`.
+
+*** Inference with pretrained image captioning model
+#+BEGIN_SRC sh
+cd experiments/anet_fine_tuning_flan_base_wide
+zsh env_setup.sh
+# Please use config file that is suitable for your captioning model. Please refer to the contents of ./configs for details.
+zsh ./scripts/prepro.sh ./configs/prepro_config_instruct_blip_t5_few_shot.jsonnet
+# Inference with 4 GPUs
+zsh ./scripts/test.sh ./configs/inference_normalized_balanced_seq_beam_8_instruct_blip_t5_few_shot_config.jsonnet 0 1 2 3
+#+END_SRC
+Results will be saved in `/work/experiment_results/anet_fine_tuning_flan_base_wide_seed_42/logs/reranking_result_${date}.json`.
+
+
+*** Inference without pretrained image captioning model (self)
+#+BEGIN_SRC sh
+cd experiments/anet_fine_tuning_flan_base_wide
+zsh env_setup.sh
+
+zsh ./scripts/prepro.sh ./configs/prepro_config_train.jsonnet
+zsh ./scripts/prepro.sh ./configs/prepro_config_valid.jsonnet
+zsh ./scripts/prepro.sh ./configs/prepro_config_test.jsonnet
+# Inference with 4 GPUs
+zsh ./scripts/test.sh ./configs/test_config.jsonnet 0 1 2 3
+#+END_SRC
+Results will be saved in `/work/experiment_results/anet_fine_tuning_flan_base_wide_seed_42/logs/generation_result_${date}.json`.
+
+** Evaluation
+See [[https://github.com/cl-tohoku/Multi-VidSum-Eval][repository for evaluation]]
+

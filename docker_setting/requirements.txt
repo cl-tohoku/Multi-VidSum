@@ -1,0 +1,12 @@
+logzero==1.7.0
+more-itertools==8.13.0
+pytorch-lightning==1.7.7
+wandb==0.13.4
+optuna==2.10.1
+sentencepiece==0.1.96
+jsonnet
+python-dotenv==0.21.0
+sacrebleu==2.3.1
+opencv-contrib-python-headless==4.6.0.66
+ftfy==6.1.1
+torchmetrics==0.11.0
